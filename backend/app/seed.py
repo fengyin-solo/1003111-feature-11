@@ -3,6 +3,73 @@ from __future__ import annotations
 
 from typing import Any
 
+
+def _personnel_seed_rows() -> list[dict[str, Any]]:
+    """人员定位终端：两百多台的缩影，覆盖在线、低电、离线、已更换几种状态。"""
+    names = ["张伟", "李强", "王磊", "赵勇", "刘洋", "陈杰", "杨帆", "周涛", "吴斌", "郑浩",
+             "孙鹏", "马超", "朱军", "胡亮", "郭峰", "何俊", "高飞", "林翔", "罗刚", "宋健",
+             "唐旭", "韩冰", "冯远", "曹阳"]
+    low_battery = {3, 7, 11, 15, 19, 23}
+    offline = {6, 18}
+    replaced = {12}
+    locations = ["一采区运输巷", "二采区回风巷", "主井底车场", "三采区综采面", "副井口广场"]
+    rows: list[dict[str, Any]] = []
+    for index, name in enumerate(names, start=1):
+        if index in low_battery:
+            status = "低电量"
+        elif index in offline:
+            status = "离线"
+        elif index in replaced:
+            status = "已更换"
+        else:
+            status = "在线"
+        signal = {"离线": "无", "低电量": "弱"}.get(status, "强" if index % 2 else "中")
+        rows.append({
+            "id": index,
+            "status": status,
+            "pending": status != "已更换",
+            "abnormal": status == "离线",
+            "终端编号": f"PERS-{index:04d}",
+            "携带人员": name,
+            "所在位置": locations[(index - 1) % len(locations)],
+            "入井时刻": f"2026-10-04 {7 + index % 3:02d}:{(index * 7) % 60:02d}",
+            "区域停留": f"{20 + index * 5}分钟",
+            "定位精度": "0.3米" if index % 2 else "0.5米",
+            "信号强度": signal,
+            "终端状态": status,
+        })
+    return rows
+
+
+def _shift_seed_rows() -> list[dict[str, Any]]:
+    """入井记录：入井人员与人员定位终端的携带人员一一对应，便于联动演示。"""
+    base = [
+        ("张伟", "综采一队", "入井中", "PERS-0001", "2026-10-04 08:05", "", "一采区运输巷"),
+        ("李强", "综采一队", "入井中", "PERS-0002", "2026-10-04 08:06", "", "一采区运输巷"),
+        ("王磊", "掘进二队", "已升井", "PERS-0003", "2026-10-04 07:52", "2026-10-04 16:20", "二采区回风巷"),
+        ("赵勇", "掘进二队", "超时未升", "PERS-0004", "2026-10-03 22:10", "", "三采区综采面"),
+        ("刘洋", "运输队", "入井中", "PERS-0005", "2026-10-04 08:12", "", "主井底车场"),
+    ]
+    rows: list[dict[str, Any]] = []
+    for index, (name, team, status, device, in_at, out_at, area) in enumerate(base, start=1):
+        rows.append({
+            "id": index,
+            "status": status,
+            "pending": status != "已升井",
+            "abnormal": status == "超时未升",
+            "记录编号": f"SHIF-{index:04d}",
+            "入井人员": name,
+            "所属班组": team,
+            "入井时间": in_at,
+            "升井时间": out_at,
+            "携带设备": device,
+            "出勤区域": area,
+            "入井状态": status,
+            "备注": "",
+        })
+    return rows
+
+
 SEED_ROWS: dict[str, list[dict[str, Any]]] = {
     "minearea": [{'id': 1,
   'status': '正常生产',
@@ -220,42 +287,7 @@ SEED_ROWS: dict[str, list[dict[str, Any]]] = {
   '预警等级': '冲击地压样例3',
   '处置措施': '冲击地压样例3',
   '监测状态': '冲击地压样例3'}],
-    "personnel": [{'id': 1,
-  'status': '在线',
-  'pending': True,
-  'abnormal': False,
-  '终端编号': 'PERS-0001',
-  '携带人员': '人员定位样例1',
-  '所在位置': '人员定位样例1',
-  '入井时刻': '人员定位样例1',
-  '区域停留': '人员定位样例1',
-  '定位精度': '人员定位样例1',
-  '信号强度': '人员定位样例1',
-  '终端状态': '人员定位样例1'},
- {'id': 2,
-  'status': '离线',
-  'pending': True,
-  'abnormal': True,
-  '终端编号': 'PERS-0002',
-  '携带人员': '人员定位样例2',
-  '所在位置': '人员定位样例2',
-  '入井时刻': '人员定位样例2',
-  '区域停留': '人员定位样例2',
-  '定位精度': '人员定位样例2',
-  '信号强度': '人员定位样例2',
-  '终端状态': '人员定位样例2'},
- {'id': 3,
-  'status': '低电量',
-  'pending': False,
-  'abnormal': False,
-  '终端编号': 'PERS-0003',
-  '携带人员': '人员定位样例3',
-  '所在位置': '人员定位样例3',
-  '入井时刻': '人员定位样例3',
-  '区域停留': '人员定位样例3',
-  '定位精度': '人员定位样例3',
-  '信号强度': '人员定位样例3',
-  '终端状态': '人员定位样例3'}],
+    "personnel": _personnel_seed_rows(),
     "dust": [{'id': 1,
   'status': '达标',
   'pending': True,
@@ -508,42 +540,7 @@ SEED_ROWS: dict[str, list[dict[str, Any]]] = {
   '考核方式': '安全培训样例3',
   '考核结果': '安全培训样例3',
   '培训状态': '安全培训样例3'}],
-    "shift": [{'id': 1,
-  'status': '入井中',
-  'pending': True,
-  'abnormal': False,
-  '记录编号': 'SHIF-0001',
-  '入井人员': '入井管理样例1',
-  '所属班组': '入井管理样例1',
-  '入井时间': '2026-09-01',
-  '升井时间': '2026-09-01',
-  '携带设备': '入井管理样例1',
-  '出勤区域': '入井管理样例1',
-  '入井状态': '入井管理样例1'},
- {'id': 2,
-  'status': '已升井',
-  'pending': True,
-  'abnormal': True,
-  '记录编号': 'SHIF-0002',
-  '入井人员': '入井管理样例2',
-  '所属班组': '入井管理样例2',
-  '入井时间': '2026-09-02',
-  '升井时间': '2026-09-02',
-  '携带设备': '入井管理样例2',
-  '出勤区域': '入井管理样例2',
-  '入井状态': '入井管理样例2'},
- {'id': 3,
-  'status': '超时未升',
-  'pending': False,
-  'abnormal': False,
-  '记录编号': 'SHIF-0003',
-  '入井人员': '入井管理样例3',
-  '所属班组': '入井管理样例3',
-  '入井时间': '2026-09-03',
-  '升井时间': '2026-09-03',
-  '携带设备': '入井管理样例3',
-  '出勤区域': '入井管理样例3',
-  '入井状态': '入井管理样例3'}],
+    "shift": _shift_seed_rows(),
     "explosive": [{'id': 1,
   'status': '待审批',
   'pending': True,

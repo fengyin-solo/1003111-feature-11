@@ -28,6 +28,15 @@ class EntryPayload(BaseModel):
     remark: str | None = None
 
 
+class BatchPayload(BaseModel):
+    """批量处置请求：同一动作作用于多台终端，request_id 用于幂等去重。"""
+
+    action: str = ""
+    entry_ids: list[int] = Field(default_factory=list)
+    request_id: str | None = None
+    operator: str | None = None
+
+
 
 class MineareaEntry(BaseModel):
     """矿区明细结构。"""

@@ -1,6 +1,7 @@
 """入井管理业务规则：状态流转、字段校验与筛选口径都收在这里。"""
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from app.store import store
@@ -59,3 +60,33 @@ class ShiftService:
         entry["pending"] = target != STATUS_ORDER[-1]
         entry["abnormal"] = action in NEGATIVE_ACTIONS
         return entry, f"入井记录已{action}"
+
+    def stats(self) -> dict[str, int]:
+        """按状态汇总入井记录，「入井中」即在井人数。"""
+        counts = {status: 0 for status in STATUS_ORDER}
+        for row in store.rows(MODULE):
+            status = str(row.get("status", ""))
+            if status in counts:
+                counts[status] += 1
+        counts["在井人数"] = counts["入井中"]
+        return counts
+
+    def in_mine_carriers(self) -> set[str]:
+        """当前仍在井的人员姓名集合，供人员定位模块联动使用。"""
+        return {
+            str(row.get("入井人员", ""))
+            for row in store.rows(MODULE)
+            if row.get("status") == "入井中"
+        }
+
+    def close_in_mine_for_carrier(self, carrier: str, *, note: str) -> int:
+        """人员定位终端不再跟踪时，把该携带人员的在井记录销记为已升井。"""
+        closed = 0
+        for row in store.rows(MODULE):
+            if row.get("入井人员") == carrier and row.get("status") == "入井中":
+                row["status"] = "已升井"
+                row["pending"] = False
+                row["升井时间"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                row["备注"] = note
+                closed += 1
+        return closed
