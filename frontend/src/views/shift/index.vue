@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { request } from '@/api/client'
 
@@ -73,7 +73,12 @@ const ENDPOINT = '/api/shift'
 const columns = ["记录编号", "入井人员", "所属班组", "入井时间", "升井时间", "携带设备", "出勤区域", "入井状态"]
 const actions = ["登记入井", "登记升井", "超时联系"]
 const statuses = ["入井中", "已升井", "超时未升", "已联系"]
-const stats = [{"label": "入井中人数", "value": 0}, {"label": "已升井人数", "value": 0}, {"label": "超时人数", "value": 0}]
+const statsData = ref<Record<string, number>>({})
+const stats = computed(() => [
+  {"label": "在井人数", "value": statsData.value['在井人数'] ?? 0},
+  {"label": "入井中人数", "value": statsData.value['入井中'] ?? 0},
+  {"label": "超时人数", "value": statsData.value['超时未升'] ?? 0},
+])
 
 const rows = ref<Row[]>([])
 const total = ref(0)
@@ -126,5 +131,19 @@ async function reload() {
   }
 }
 
-onMounted(reload)
+async function reloadStats() {
+  try {
+    const response = await request(`${ENDPOINT}/stats/underground`)
+    if (response.ok) {
+      statsData.value = await response.json()
+    }
+  } catch {
+    // 统计卡片不阻塞列表
+  }
+}
+
+onMounted(() => {
+  void reload()
+  void reloadStats()
+})
 </script>

@@ -13,6 +13,7 @@ from app.routers import roof as router_roof
 from app.routers import waterhazard as router_waterhazard
 from app.routers import rockburst as router_rockburst
 from app.routers import personnel as router_personnel
+from app.routers import dutylog as router_dutylog
 from app.routers import dust as router_dust
 from app.routers import fireprevent as router_fireprevent
 from app.routers import belt as router_belt
@@ -27,4 +28,4 @@ from app.routers import monitorstation as router_monitorstation
 from app.routers import certificate as router_certificate
 from app.routers import emergencydrill as router_emergencydrill
 
-ROUTERS = [router_minearea, router_gas, router_ventilation, router_roof, router_waterhazard, router_rockburst, router_personnel, router_dust, router_fireprevent, router_belt, router_hoist, router_power, router_rescue, router_training, router_shift, router_explosive, router_roadway, router_monitorstation, router_certificate, router_emergencydrill]
+ROUTERS = [router_minearea, router_gas, router_ventilation, router_roof, router_waterhazard, router_rockburst, router_personnel, router_dutylog, router_dust, router_fireprevent, router_belt, router_hoist, router_power, router_rescue, router_training, router_shift, router_explosive, router_roadway, router_monitorstation, router_certificate, router_emergencydrill]

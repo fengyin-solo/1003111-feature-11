@@ -3,6 +3,73 @@ from __future__ import annotations
 
 from typing import Any
 
+TERMINAL_TOTAL = 228
+
+_SURNAMES = list("王李张刘陈杨黄赵吴周徐孙马朱胡郭何林高罗郑梁谢宋唐许韩冯邓曹彭")
+_GIVEN_NAMES = ["伟", "强", "磊", "军", "杰", "涛", "明", "勇", "辉", "鹏", "飞", "斌",
+                "建国", "建军", "志强", "永福", "德海", "金生", "玉柱", "宝山", "守义", "喜来",
+                "进财", "根生", "长顺", "满仓", "万春", "兴业", "安平", "庆丰", "守安", "成林",
+                "立柱", "开山", "向东", "迎新", "志国", "学文", "振山", "广田"]
+_TEAMS = ["综采一队", "综采二队", "掘进一队", "掘进二队", "通风队", "机电队", "运输队"]
+_AREAS = ["1101综采面", "1103回风巷", "2202掘进面", "中央变电所", "主井底车场", "回风斜井", "运输大巷"]
+_STATUSES = ["在线", "离线", "低电量", "已更换"]
+
+
+def _person_name(index: int) -> str:
+    """两百多人也不重名：姓按序号轮转，名按不重复的序号配对（30×40 组，覆盖上千人）。"""
+    return f"{_SURNAMES[index % len(_SURNAMES)]}{_GIVEN_NAMES[(index // len(_SURNAMES)) % len(_GIVEN_NAMES)]}"
+
+
+def _build_personnel_rows() -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for i in range(TERMINAL_TOTAL):
+        status = _STATUSES[i % 4]  # 在线、离线、低电量、已更换依次轮转，各占四分之一
+        rows.append({
+            "id": i + 1,
+            "status": status,
+            "pending": status != "已更换",
+            "abnormal": status == "离线",
+            "终端编号": f"PERS-{i + 1:04d}",
+            "携带人员": _person_name(i),
+            "所在位置": _AREAS[i % len(_AREAS)],
+            "入井时刻": f"2026-10-05 {6 + (i % 12):02d}:{(i * 7) % 60:02d}",
+            "区域停留": f"{(i * 13) % 180 + 5} 分钟",
+            "定位精度": f"{(i * 3) % 8 + 3} 米",
+            "信号强度": ["强", "中", "弱", "中"][i % 4],
+            "终端状态": status,
+        })
+    return rows
+
+
+def _build_shift_rows(personnel: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """入井记录与终端按携带人员一一对应，在井人数才有据可依。"""
+    rows: list[dict[str, Any]] = []
+    for i, terminal in enumerate(personnel):
+        underground = terminal["status"] in ("在线", "离线", "低电量")
+        status = "入井中" if underground and terminal["status"] != "离线" else (
+            "超时未升" if terminal["status"] == "离线" else "已升井"
+        )
+        rows.append({
+            "id": i + 1,
+            "status": status,
+            "pending": underground,
+            "abnormal": terminal["status"] == "离线",
+            "记录编号": f"SHIF-{i + 1:04d}",
+            "入井人员": terminal["携带人员"],
+            "所属班组": _TEAMS[i % len(_TEAMS)],
+            "入井时间": terminal["入井时刻"],
+            "升井时间": "" if underground else f"2026-10-05 {14 + (i % 6):02d}:{(i * 11) % 60:02d}",
+            "携带设备": terminal["终端编号"],
+            "出勤区域": terminal["所在位置"],
+            "入井状态": status,
+        })
+    return rows
+
+
+_PERSONNEL_ROWS = _build_personnel_rows()
+_SHIFT_ROWS = _build_shift_rows(_PERSONNEL_ROWS)
+
+
 SEED_ROWS: dict[str, list[dict[str, Any]]] = {
     "minearea": [{'id': 1,
   'status': '正常生产',
@@ -220,42 +287,7 @@ SEED_ROWS: dict[str, list[dict[str, Any]]] = {
   '预警等级': '冲击地压样例3',
   '处置措施': '冲击地压样例3',
   '监测状态': '冲击地压样例3'}],
-    "personnel": [{'id': 1,
-  'status': '在线',
-  'pending': True,
-  'abnormal': False,
-  '终端编号': 'PERS-0001',
-  '携带人员': '人员定位样例1',
-  '所在位置': '人员定位样例1',
-  '入井时刻': '人员定位样例1',
-  '区域停留': '人员定位样例1',
-  '定位精度': '人员定位样例1',
-  '信号强度': '人员定位样例1',
-  '终端状态': '人员定位样例1'},
- {'id': 2,
-  'status': '离线',
-  'pending': True,
-  'abnormal': True,
-  '终端编号': 'PERS-0002',
-  '携带人员': '人员定位样例2',
-  '所在位置': '人员定位样例2',
-  '入井时刻': '人员定位样例2',
-  '区域停留': '人员定位样例2',
-  '定位精度': '人员定位样例2',
-  '信号强度': '人员定位样例2',
-  '终端状态': '人员定位样例2'},
- {'id': 3,
-  'status': '低电量',
-  'pending': False,
-  'abnormal': False,
-  '终端编号': 'PERS-0003',
-  '携带人员': '人员定位样例3',
-  '所在位置': '人员定位样例3',
-  '入井时刻': '人员定位样例3',
-  '区域停留': '人员定位样例3',
-  '定位精度': '人员定位样例3',
-  '信号强度': '人员定位样例3',
-  '终端状态': '人员定位样例3'}],
+    "personnel": _PERSONNEL_ROWS,
     "dust": [{'id': 1,
   'status': '达标',
   'pending': True,
@@ -508,42 +540,7 @@ SEED_ROWS: dict[str, list[dict[str, Any]]] = {
   '考核方式': '安全培训样例3',
   '考核结果': '安全培训样例3',
   '培训状态': '安全培训样例3'}],
-    "shift": [{'id': 1,
-  'status': '入井中',
-  'pending': True,
-  'abnormal': False,
-  '记录编号': 'SHIF-0001',
-  '入井人员': '入井管理样例1',
-  '所属班组': '入井管理样例1',
-  '入井时间': '2026-09-01',
-  '升井时间': '2026-09-01',
-  '携带设备': '入井管理样例1',
-  '出勤区域': '入井管理样例1',
-  '入井状态': '入井管理样例1'},
- {'id': 2,
-  'status': '已升井',
-  'pending': True,
-  'abnormal': True,
-  '记录编号': 'SHIF-0002',
-  '入井人员': '入井管理样例2',
-  '所属班组': '入井管理样例2',
-  '入井时间': '2026-09-02',
-  '升井时间': '2026-09-02',
-  '携带设备': '入井管理样例2',
-  '出勤区域': '入井管理样例2',
-  '入井状态': '入井管理样例2'},
- {'id': 3,
-  'status': '超时未升',
-  'pending': False,
-  'abnormal': False,
-  '记录编号': 'SHIF-0003',
-  '入井人员': '入井管理样例3',
-  '所属班组': '入井管理样例3',
-  '入井时间': '2026-09-03',
-  '升井时间': '2026-09-03',
-  '携带设备': '入井管理样例3',
-  '出勤区域': '入井管理样例3',
-  '入井状态': '入井管理样例3'}],
+    "shift": _SHIFT_ROWS,
     "explosive": [{'id': 1,
   'status': '待审批',
   'pending': True,

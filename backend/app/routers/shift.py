@@ -63,3 +63,9 @@ def export_entries() -> dict[str, Any]:
     """导出入井管理清单：返回当前过滤条件下的全量数据。"""
     items, total = service.list_entries(page=1, size=10000)
     return {"module": "shift", "total": total, "items": items}
+
+
+@router.get("/stats/underground")
+def underground_summary() -> dict[str, Any]:
+    """在井人数汇总：终端批量换卡等处置会同步改变这里的口径。"""
+    return service.underground_summary()

@@ -28,6 +28,22 @@ class EntryPayload(BaseModel):
     remark: str | None = None
 
 
+class BatchActionPayload(BaseModel):
+    """批量处置请求：一个动作 + 一组终端 id；批次号由前端生成以便重复提交时核对。"""
+
+    action: str
+    terminal_ids: list[int] = Field(default_factory=list)
+    batch_no: str | None = None
+    operator: str | None = None
+    remark: str | None = None
+
+
+class SelectionPayload(BaseModel):
+    """跨页勾选核对：只提交当前勾选的终端 id 清单。"""
+
+    terminal_ids: list[int] = Field(default_factory=list)
+
+
 
 class MineareaEntry(BaseModel):
     """矿区明细结构。"""

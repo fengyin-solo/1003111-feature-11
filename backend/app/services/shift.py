@@ -59,3 +59,20 @@ class ShiftService:
         entry["pending"] = target != STATUS_ORDER[-1]
         entry["abnormal"] = action in NEGATIVE_ACTIONS
         return entry, f"入井记录已{action}"
+
+    def underground_summary(self) -> dict[str, Any]:
+        """在井人数：入井中与超时未升都仍在井下；超时人数单列提醒。"""
+        rows = store.rows(MODULE)
+        counts = {status: 0 for status in STATUS_ORDER}
+        for row in rows:
+            status = str(row.get("status"))
+            if status in counts:
+                counts[status] += 1
+        return {
+            "在井人数": counts["入井中"] + counts["超时未升"],
+            "入井中": counts["入井中"],
+            "超时未升": counts["超时未升"],
+            "已升井": counts["已升井"],
+            "已联系": counts["已联系"],
+            "入井记录总数": len(rows),
+        }
